@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import utils.roundings as rnd
+import utils.blockJpeg as blockJpeg
 
 BLOCK_SIZE = 8
 
@@ -89,6 +90,11 @@ def slice_image(image):
 
 def compute_dct(sliced_img):
     dct_output = [cv2.dct(part) for part in sliced_img]
+    return dct_output
+
+
+def compute_dct_blockjpeg(sliced_img, d, s, sh, sv, Q, fq, f2, fe, fo, fs):
+    dct_output = [blockJpeg.block_jpeg(part, d, s, sh, sv, Q, fq, f2, fe, fo, fs) for part in sliced_img]
     return dct_output
 
 
