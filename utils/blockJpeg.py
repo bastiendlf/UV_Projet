@@ -1,6 +1,31 @@
 import numpy as np
 
 
+def get_quantification_matrix(quality: int = 50):
+    """
+    Compute quantification matrix for JPEG compression
+    :param quality: int between 1 and 100
+    :return: numpy 2D arrays with quantification coefficients
+    """
+    q50 = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
+                    [12, 12, 14, 19, 26, 58, 60, 55],
+                    [14, 13, 16, 24, 40, 57, 69, 56],
+                    [14, 17, 22, 29, 51, 87, 80, 62],
+                    [18, 22, 37, 56, 68, 109, 103, 77],
+                    [24, 35, 55, 64, 81, 104, 113, 92],
+                    [49, 64, 78, 87, 103, 121, 120, 101],
+                    [72, 92, 95, 98, 112, 100, 130, 99]])
+
+    if quality < 50:
+        s = 5000 / quality
+    else:
+        s = 200 - (2 * quality)
+
+    q_output = np.floor((s * q50 + 50) / 100)
+    q_output[q_output == 0] = 1
+    return np.array(q_output, dtype=np.int)
+
+
 # Rounding Operators
 def flt2fix(x, k):
     """ Convert from floating- to fixed-point"""
@@ -158,6 +183,21 @@ def d3(v, s, fe, fo):
 
 
 def block_jpeg(I, d, s, sh, sv, Q, fq, f2, fe, fo, fs):
+    """
+    Compute 2D-DCT, quantization + rounding for an 8x8 pixels block
+    :param I: 8x8 pixels block
+    :param d: 1D-DCT function (d1, d2 or d3)
+    :param s: scalar for 2D-descaling
+    :param sh: 1x8 vector DCT divisors for row de-scaling
+    :param sv: 1x8 vector DCT divisors for column de-scaling
+    :param Q: 8x8 quantification matrix
+    :param fq: rounding operator after quantization
+    :param f2: rounding operator after quantization with power of 2
+    :param fe: rounding operator for even DCT coefficients in 1D-DCT de-scaling
+    :param fo: rounding operator for odd DCT coefficients in 1D-DCT de-scaling
+    :param fs: rounding operator for 2D-DCT de-scaling
+    :return: 8x8 2D-DCT output
+    """
     I = I - 128  # normalize into[-128, 127]
     I = np.array(I, int)
     # 2-D block DCT from two, 1-D DCTs
