@@ -5,6 +5,7 @@ import utils.blockJpeg as blockJpeg
 
 BLOCK_SIZE = 8
 
+
 def compress_decompress(img, quantification_quality=50, rounding=rnd.round):
     compressed = compress(img, quantification_quality, rounding)
     decompressed = decompress(compressed, img.shape[1], quantification_quality, rounding)

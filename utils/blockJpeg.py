@@ -3,9 +3,9 @@ import numpy as np
 
 def get_quantification_matrix(quality: int = 50):
     """
-    Compute quantification matrix for JPEG compression
+    Compute quantization matrix for JPEG compression
     :param quality: int between 1 and 100
-    :return: numpy 2D arrays with quantification coefficients
+    :return: numpy 2D array with quantification coefficients
     """
     q50 = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
                     [12, 12, 14, 19, 26, 58, 60, 55],
