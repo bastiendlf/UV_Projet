@@ -4,7 +4,7 @@ import cv2
 import os
 import glob
 import utils.customJpegCompressor as JpegCompressor
-from utils.blockJpeg import block_jpeg
+from utils.blockJpeg import block_jpeg, get_quantification_matrix
 
 INPUT_DATA_FOLDER = '../data/'
 OUTPUT_DATA_FOLDER = '../output/datasets/'
@@ -18,13 +18,13 @@ def settings_to_dict(d, s, sh, sv, Q, fq, f2, fe, fo, fs):
     :param s: scalar for 2D-descaling
     :param sh: 1x8 vector DCT divisors for row de-scaling
     :param sv: 1x8 vector DCT divisors for column de-scaling
-    :param Q: 8x8 quantification matrix
+    :param Q: quantization quality from 1 to 100
     :param fq: rounding operator after quantization
     :param f2: rounding operator after quantization with power of 2
     :param fe: rounding operator for even DCT coefficients in 1D-DCT de-scaling
     :param fo: rounding operator for odd DCT coefficients in 1D-DCT de-scaling
     :param fs: rounding operator for 2D-DCT de-scaling
-    :return: python dict with corresponding values
+    :return: python dict with the corresponding values
     """
     settings = {
         'd': d,
@@ -49,7 +49,7 @@ def save_settings(output, d, s, sh, sv, Q, fq, f2, fe, fo, fs):
     :param s: scalar for 2D-descaling
     :param sh: 1x8 vector DCT divisors for row de-scaling
     :param sv: 1x8 vector DCT divisors for column de-scaling
-    :param Q: 8x8 quantification matrix
+    :param Q: quantization quality from 1 to 100
     :param fq: rounding operator after quantization
     :param f2: rounding operator after quantization with power of 2
     :param fe: rounding operator for even DCT coefficients in 1D-DCT de-scaling
@@ -105,21 +105,26 @@ def make_dataset(picture_folder, dataset_number, d, s, sh, sv, Q, fq, f2, fe, fo
     :param s: scalar for 2D-descaling
     :param sh: 1x8 vector DCT divisors for row de-scaling
     :param sv: 1x8 vector DCT divisors for column de-scaling
-    :param Q: 8x8 quantification matrix
+    :param Q: quantization quality from 1 to 100
     :param fq: rounding operator after quantization
     :param f2: rounding operator after quantization with power of 2
     :param fe: rounding operator for even DCT coefficients in 1D-DCT de-scaling
     :param fo: rounding operator for odd DCT coefficients in 1D-DCT de-scaling
     :param fs: rounding operator for 2D-DCT de-scaling
-    :return:
+    :return: none
     """
-    pictures = os.listdir(picture_folder)
-    for pic_name in pictures[:max_pic]:
+
+    pictures = [f for f in os.listdir(picture_folder) if f.endswith('.tif')]
+    Q_matrix = get_quantification_matrix(Q)
+
+    # for pic_name in pictures[:max_pic]:
+    for pic_name in pictures:
+        print(pic_name)
         img = cv2.imread(INPUT_DATA_FOLDER + pic_name, 0)
 
         # Compute JPEG compression
         sliced_img = JpegCompressor.slice_image(img)
-        DCToutput = [block_jpeg(block, d, s, sh, sv, Q, fq, f2, fe, fo, fs) for block in sliced_img]
+        DCToutput = [block_jpeg(block, d, s, sh, sv, Q_matrix, fq, f2, fe, fo, fs) for block in sliced_img]
 
         # Make sure the output folder exits
         if not os.path.exists(OUTPUT_DATA_FOLDER):
@@ -146,7 +151,7 @@ def load_dataset(dataset_number):
     """
     path_to_dataset = os.path.join(OUTPUT_DATA_FOLDER, str(dataset_number))
     if not os.path.exists(path_to_dataset):
-        return []
+        return {}, []
     else:
         settings = load_settings(dataset_number)
         dct_images_name = glob.glob(os.path.join(OUTPUT_DATA_FOLDER, str(dataset_number), '*.npy'))
