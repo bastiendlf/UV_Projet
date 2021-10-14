@@ -2,3 +2,4 @@
 /data/*.tif
 /output/datasets/*
 /notebooks/.ipynb_checkpoints/
+/models/
