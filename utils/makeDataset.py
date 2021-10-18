@@ -4,11 +4,10 @@ import cv2
 import os
 import glob
 import utils.customJpegCompressor as JpegCompressor
-from utils.blockJpeg import block_jpeg, get_quantification_matrix
+from utils.blockJpeg import block_jpeg, get_quantification_matrix, floor, halfup, trunc, round_op, d1, d2, d3
 
 INPUT_DATA_FOLDER = '../data/'
 OUTPUT_DATA_FOLDER = '../output/datasets/'
-max_pic = 5
 
 
 def settings_to_dict(d, s, sh, sv, Q, fq, f2, fe, fo, fs):
@@ -69,9 +68,13 @@ def load_settings(dataset_number):
     :param dataset_number: int or str
     :return: Python dict
     """
-    with open(os.path.join(OUTPUT_DATA_FOLDER, str(dataset_number), 'settings.pickle'), 'rb') as handle:
-        settings = pickle.load(handle)
-    return settings
+    path_settings = os.path.join(OUTPUT_DATA_FOLDER, str(dataset_number), 'settings.pickle')
+    if os.path.exists(path_settings):
+        with open(path_settings, 'rb') as handle:
+            settings = pickle.load(handle)
+        return settings
+    else:
+        return None
 
 
 def make_dataset_dict_settings(picture_folder, dataset_number, settings):
@@ -96,6 +99,62 @@ def make_dataset_dict_settings(picture_folder, dataset_number, settings):
     make_dataset(picture_folder, dataset_number, d, s, sh, sv, Q, fq, f2, fe, fo, fs)
 
 
+def make_dataset_random_roundings(picture_folder, dct_function_name):
+    """
+    Create an off-line dataset of jpeg compressed images with Q90, dct_function and random roundings functions
+    :param picture_folder: input folder containing pictures to compress
+    :param dct_function_name: d1 d2 or d3
+    :return: none
+    """
+    DCT_FUNCTION = {
+        "d1": d1,
+        "d2": d2,
+        "d3": d3
+    }
+    d = DCT_FUNCTION[dct_function_name]
+    pictures = [f for f in os.listdir(picture_folder) if f.endswith('.tif')]
+
+    # fixed parameters
+    Qf = 90
+    Q_matrix = get_quantification_matrix(Qf)
+    s = 2 ** 0
+    sh = np.array([2 ** 11] * 8)
+    sv = np.array([2 ** 15] * 8)
+
+    # random parameters
+    roudings = [floor, halfup, trunc, round_op]
+
+    # Make sure the output folder exits
+    if not os.path.exists(OUTPUT_DATA_FOLDER):
+        os.mkdir(OUTPUT_DATA_FOLDER)
+
+    # Place pictures with same compression settings in a common folder
+    dataset_output = os.path.join(OUTPUT_DATA_FOLDER, dct_function_name)
+    if not os.path.exists(dataset_output):
+        os.mkdir(dataset_output)
+
+    already_computed_pictures = os.listdir(dataset_output)
+    pictures_to_convert = [pic for pic in pictures if not (pic + ".npy" in already_computed_pictures)]
+    nb_pic_to_convert = len(pictures_to_convert)
+
+    for i, pic_name in enumerate(pictures_to_convert):
+        print(f"{pic_name} | {100 * i / nb_pic_to_convert}%")
+        img = cv2.imread(INPUT_DATA_FOLDER + pic_name, 0)
+
+        # set random roundings
+        fq = np.random.choice(roudings)
+        f2 = np.random.choice(roudings)
+        fe = np.random.choice(roudings)
+        fo = np.random.choice(roudings)
+        fs = np.random.choice(roudings)
+
+        # Compute JPEG compression
+        sliced_img = JpegCompressor.slice_image(img)
+        DCToutput = [block_jpeg(block, d, s, sh, sv, Q_matrix, fq, f2, fe, fo, fs) for block in sliced_img]
+
+        np.save(dataset_output + "/" + pic_name + ".npy", JpegCompressor.get_flat_average_dct_image(DCToutput))
+
+
 def make_dataset(picture_folder, dataset_number, d, s, sh, sv, Q, fq, f2, fe, fo, fs):
     """
     Create an off-line dataset of jpeg compressed images with the given settings passed
@@ -117,7 +176,6 @@ def make_dataset(picture_folder, dataset_number, d, s, sh, sv, Q, fq, f2, fe, fo
     pictures = [f for f in os.listdir(picture_folder) if f.endswith('.tif')]
     Q_matrix = get_quantification_matrix(Q)
 
-    # for pic_name in pictures[:max_pic]:
     for pic_name in pictures:
         print(pic_name)
         img = cv2.imread(INPUT_DATA_FOLDER + pic_name, 0)

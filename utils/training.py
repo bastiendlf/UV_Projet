@@ -2,14 +2,13 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import confusion_matrix
 import utils.makeDataset as DatasetMaker
 import os
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.svm import SVC
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 
 
@@ -56,6 +55,30 @@ def majority_vote(model, X_test):
     return y_pred
 
 
+def get_average_dct(dct_images):
+    list_average_dct = np.mean(np.array(dct_images), axis=1)
+    return [avg_2D.flatten() for avg_2D in list_average_dct]
+
+
+def unique_images(X, y):
+    nb_class = len(np.unique(y))
+    values, counts = np.unique(y, return_counts=True)
+
+    img_per_class = int(len(X) / nb_class)
+    extract = int(img_per_class / nb_class)
+
+    new_X = []
+    new_Y = []
+
+    for i in range(nb_class):
+        # print(i * counts[i] + i * extract)
+        # print(i * counts[i] + i * extract + extract)
+        new_X += X[i * counts[i] + i * extract: i * counts[i] + i * extract + extract]
+        new_Y += y[i * counts[i] + i * extract: i * counts[i] + i * extract + extract]
+
+    return new_X, new_Y
+
+
 def get_trained_model(model, PATH_MODELS, MODEL_NAME, X_train_block=None, y_train_block=None):
     if not (os.path.exists(os.path.join(PATH_MODELS, MODEL_NAME + '.pickle'))):
         print(f"Training {MODEL_NAME}, please wait...")
@@ -68,7 +91,7 @@ def get_trained_model(model, PATH_MODELS, MODEL_NAME, X_train_block=None, y_trai
     return model
 
 
-def pipeline(MODEL_TYPE, DATASETS):
+def pipeline_dct_blocks(MODEL_TYPE, DATASETS):
     MODELS = {
         "rf": RandomForestClassifier(max_depth=2, random_state=0),
         "adaboost": AdaBoostClassifier(),
@@ -104,3 +127,57 @@ def pipeline(MODEL_TYPE, DATASETS):
     plt.subplot(122)
     show_confusion_matrix(y_test, y_pred, DATASETS, "Majority vote", False)
     plt.show()
+
+
+def pipeline_avg_dct(MODEL_TYPE, DATASETS):
+    MODELS = {
+        "rf": RandomForestClassifier(max_depth=10, random_state=0),
+        "adaboost": AdaBoostClassifier(),
+        "svm": make_pipeline(StandardScaler(), SVC(gamma='auto', probability=False))
+    }
+
+    PATH_MODELS = f"../models/averageDCT/{MODEL_TYPE}/"
+    MODEL_NAME = ''.join([str(MODEL_TYPE)] + ['_c' + str(curr) for curr in DATASETS])
+
+    X = []
+    y_label = []
+
+    for current_dataset in DATASETS:
+        _, X_current = DatasetMaker.load_dataset(current_dataset)
+        y_label += [current_dataset] * len(X_current)
+        X += X_current
+
+    le = LabelEncoder()
+    y = le.fit_transform(y_label)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+
+    model = get_trained_model(MODELS[MODEL_TYPE], PATH_MODELS, MODEL_NAME, X_train, y_train)
+    y_pred = model.predict(X_test)
+    print(classification_report(y_test, y_pred))
+    show_confusion_matrix(y_test, y_pred, DATASETS, f"Average DCT {MODEL_NAME}")
+
+
+def compare_pipeline_avg_dct(DATASETS, MODELS):
+    X = []
+    y_label = []
+
+    for current_dataset in DATASETS:
+        _, X_current = DatasetMaker.load_dataset(current_dataset)
+        y_label += [current_dataset] * len(X_current)
+        X += X_current
+
+    le = LabelEncoder()
+    y = le.fit_transform(y_label)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+
+    for model_type in MODELS.keys():
+        PATH_MODELS = f"../models/averageDCT/{model_type}/"
+        MODEL_NAME = ''.join([str(model_type)] + ['_c' + str(curr) for curr in DATASETS])
+
+        model = get_trained_model(MODELS[model_type], PATH_MODELS, MODEL_NAME, X_train, y_train)
+        y_pred = model.predict(X_test)
+        print(model_type)
+        print(classification_report(y_test, y_pred))
+        show_confusion_matrix(y_test, y_pred, DATASETS, f"Average DCT {MODEL_NAME}")
