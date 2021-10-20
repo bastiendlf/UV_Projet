@@ -24,6 +24,19 @@ def show_confusion_matrix(y_test, y_pred, class_name, title="", show=True):
         plt.show(block=False)
 
 
+def save_model_and_label_encoder(model, le, path_to_model_folder, name):
+    save_model(model, path_to_model_folder, name)
+    with open(os.path.join(path_to_model_folder, f"LABEL_ENCODER_{name}.pickle"), 'wb') as handle:
+        pickle.dump(le, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_model_and_label_encoder(path_to_model_folder, name):
+    model = load_model(path_to_model_folder, name)
+    with open(os.path.join(path_to_model_folder, f"LABEL_ENCODER_{name}.pickle"), 'rb') as handle:
+        label_encoder = pickle.load(handle)
+    return model, label_encoder
+
+
 def save_model(model, path_to_model_folder, name):
     with open(os.path.join(path_to_model_folder, f"{name}.pickle"), 'wb') as handle:
         pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
