@@ -209,7 +209,55 @@ def make_dataset_random_roundings(picture_folder, dct_function_name, Qf):
         np.save(dataset_output + "/" + pic_name + ".npy", JpegCompressor.get_flat_average_dct_image(DCToutput))
 
 
-def make_dataset_validation(picture_folder, dataset_name, Q_list, d_list, rounding_list):
+def make_dataset_same_roundings(picture_folder, rounding, rounding_name, Qf=90, d=d3):
+    """
+    Create an off-line dataset of jpeg compressed images with Q90, d3 and the wanted rounding function
+    :param rounding_name: str name of rounding for folder creation
+    :param picture_folder: input folder containing pictures to compress
+    :param rounding: the wanted rounding function
+    :return: none
+    """
+
+    dataset_folder_name = f"{rounding_name}_Q{Qf}_d2"
+
+    pictures = [f for f in os.listdir(picture_folder) if f.endswith('.tif')]
+
+    # set parameters
+    Q_matrix = get_quantification_matrix(Qf)
+    s = 2 ** 0
+    sh = np.array([2 ** 11] * 8)
+    sv = np.array([2 ** 15] * 8)
+    fq = rounding
+    f2 = rounding
+    fe = rounding
+    fo = rounding
+    fs = rounding
+
+    # Make sure the output folder exits
+    if not os.path.exists(OUTPUT_DATA_FOLDER):
+        os.mkdir(OUTPUT_DATA_FOLDER)
+
+    # Place pictures with same compression settings in a common folder
+    dataset_output = os.path.join(OUTPUT_DATA_FOLDER, dataset_folder_name)
+    if not os.path.exists(dataset_output):
+        os.mkdir(dataset_output)
+
+    already_computed_pictures = os.listdir(dataset_output)
+    pictures_to_convert = [pic for pic in pictures if not (pic + ".npy" in already_computed_pictures)]
+    nb_pic_to_convert = len(pictures_to_convert)
+
+    for i, pic_name in enumerate(pictures_to_convert):
+        print(f"{rounding_name} : {pic_name} | {100 * i / nb_pic_to_convert}%")
+        img = cv2.imread(INPUT_DATA_FOLDER + pic_name, 0)
+
+        # Compute JPEG compression
+        sliced_img = JpegCompressor.slice_image(img)
+        DCToutput = [block_jpeg(block, d, s, sh, sv, Q_matrix, fq, f2, fe, fo, fs) for block in sliced_img]
+
+        np.save(dataset_output + "/" + pic_name + ".npy", JpegCompressor.get_flat_average_dct_image(DCToutput))
+
+
+def make_dataset_validation(picture_folder, dataset_name, Q_list, d_list, rounding_list, same_roundings=False):
     """
     Create an off-line dataset of jpeg compressed images with random settings
     :param rounding_list: roundings function
@@ -217,6 +265,7 @@ def make_dataset_validation(picture_folder, dataset_name, Q_list, d_list, roundi
     :param Q_list: quantization values
     :param picture_folder: input folder containing pictures to compress
     :param dataset_name: str
+    :param same_roundings: bool to set all the roundings equal
     :return: none
     """
 
@@ -251,11 +300,12 @@ def make_dataset_validation(picture_folder, dataset_name, Q_list, d_list, roundi
         d = np.random.choice(d_list)
         Qf = np.random.choice(Q_list)
         Q_matrix = get_quantification_matrix(Qf)
-        fq = np.random.choice(rounding_list)
-        f2 = np.random.choice(rounding_list)
-        fe = np.random.choice(rounding_list)
-        fo = np.random.choice(rounding_list)
-        fs = np.random.choice(rounding_list)
+        rounding_fonction = np.random.choice(rounding_list)
+        fq = rounding_fonction if same_roundings else np.random.choice(rounding_list)
+        f2 = rounding_fonction if same_roundings else np.random.choice(rounding_list)
+        fe = rounding_fonction if same_roundings else np.random.choice(rounding_list)
+        fo = rounding_fonction if same_roundings else np.random.choice(rounding_list)
+        fs = rounding_fonction if same_roundings else np.random.choice(rounding_list)
 
         # Compute JPEG compression
         sliced_img = JpegCompressor.slice_image(img)

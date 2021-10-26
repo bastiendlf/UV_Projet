@@ -9,9 +9,11 @@ INPUT_DATA_FOLDER = '../data/'
 Q_list = [10, 50, 90]
 d_list = [d1, d2, d3]
 rounding_list = [floor, halfup, trunc, round_op]
+same_roundings_per_image = True
 
 if __name__ == '__main__':
     if os.getcwd().endswith("/Code"):
         os.chdir(os.path.join(os.getcwd(), "utils"))
     print(f"Computing validation dataset ...")
-    DatasetMaker.make_dataset_validation(INPUT_DATA_FOLDER, "validation", Q_list, d_list, rounding_list)
+    DatasetMaker.make_dataset_validation(INPUT_DATA_FOLDER, "validation_d3_Q90_roundings", Q_list, d_list,
+                                         rounding_list, same_roundings_per_image)

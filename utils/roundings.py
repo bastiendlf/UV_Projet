@@ -32,7 +32,7 @@ def trunc(x):
     return np.trunc(x)
 
 
-def round(x):
+def round_op(x):
     return np.around(x)
 
 
@@ -41,8 +41,8 @@ if __name__ == '__main__':
     neg_x = x * -1
 
     print('****ROUND****')
-    print(f"round({x}) = {round(x)} => should be 2")
-    print(f"round({neg_x}) = {round(neg_x)} => should be -2")
+    print(f"round({x}) = {round_op(x)} => should be 2")
+    print(f"round({neg_x}) = {round_op(neg_x)} => should be -2")
 
     print('\n\n****HALFUP****')
     print(f"halfup({x}) = {halfup(x)} => should be 2")

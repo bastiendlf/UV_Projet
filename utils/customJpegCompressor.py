@@ -16,7 +16,7 @@ def get_flat_average_dct_image(dct_image):
     return average_dct.flatten()
 
 
-def compress_decompress(img, quantification_quality=50, rounding=rnd.round):
+def compress_decompress(img, quantification_quality=50, rounding=rnd.round_op):
     """
     Jpeg encodes an image and decode it
     :param img: Should be gray scale image
@@ -29,7 +29,7 @@ def compress_decompress(img, quantification_quality=50, rounding=rnd.round):
     return decompressed
 
 
-def compress(img, quantification_quality=50, rounding=rnd.round):
+def compress(img, quantification_quality=50, rounding=rnd.round_op):
     """
     Take a gray scale image (width and height should be multiple of 8) and convert it into a jpeg compressed object.
     :param img: Should be gray scale image
@@ -45,7 +45,7 @@ def compress(img, quantification_quality=50, rounding=rnd.round):
     return quantiOutput
 
 
-def decompress(compressed_output, img_pxl_width, quantification_quality=50, rounding=rnd.round):
+def decompress(compressed_output, img_pxl_width, quantification_quality=50, rounding=rnd.round_op):
     """
     Convert a list of DCT into a gray scale image
     :param compressed_output: jpeg compressed image (without entropy coding)
@@ -113,7 +113,7 @@ def compute_dct_blockjpeg(sliced_img, d, s, sh, sv, Q, fq, f2, fe, fo, fs):
     return dct_output
 
 
-def quantification(dct_output, selected_qmatrix, rounding=rnd.round):
+def quantification(dct_output, selected_qmatrix, rounding=rnd.round_op):
     """
     Quantization of the DCT output
     :param dct_output: list of 8x8 dct blocks
@@ -127,7 +127,7 @@ def quantification(dct_output, selected_qmatrix, rounding=rnd.round):
     return quantification_output
 
 
-def inverse_quantification(quantiOutput, selected_qmatrix, rounding=rnd.round):
+def inverse_quantification(quantiOutput, selected_qmatrix, rounding=rnd.round_op):
     """
     Remove quantization on a list of DCT blocks quantified
     :param quantiOutput: list of quantified and rounded dct matrices
