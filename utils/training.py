@@ -13,6 +13,15 @@ from sklearn.model_selection import train_test_split
 
 
 def show_confusion_matrix(y_test, y_pred, class_name, title="", show=True):
+    """
+    Plot a nice looking confusion matrix
+    :param y_test: list
+    :param y_pred: list
+    :param class_name: list of labels
+    :param title: str
+    :param show: Bool
+    :return: None
+    """
     cm = confusion_matrix(y_test, y_pred)
     cmn = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
     sns.heatmap(cmn, annot=True, fmt='.5f', xticklabels=class_name, yticklabels=class_name, cmap='Blues')
@@ -25,12 +34,26 @@ def show_confusion_matrix(y_test, y_pred, class_name, title="", show=True):
 
 
 def save_model_and_label_encoder(model, le, path_to_model_folder, name):
+    """
+    Saves model and label encoder used to train model
+    :param model: machine learning trained model
+    :param le: label_encoder
+    :param path_to_model_folder: str
+    :param name: str
+    :return: none
+    """
     save_model(model, path_to_model_folder, name)
     with open(os.path.join(path_to_model_folder, f"LABEL_ENCODER_{name}.pickle"), 'wb') as handle:
         pickle.dump(le, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def load_model_and_label_encoder(path_to_model_folder, name):
+    """
+    Loads model and label encoder used to train model
+    :param path_to_model_folder: str
+    :param name: str
+    :return: none
+    """
     model = load_model(path_to_model_folder, name)
     with open(os.path.join(path_to_model_folder, f"LABEL_ENCODER_{name}.pickle"), 'rb') as handle:
         label_encoder = pickle.load(handle)
@@ -38,17 +61,36 @@ def load_model_and_label_encoder(path_to_model_folder, name):
 
 
 def save_model(model, path_to_model_folder, name):
+    """
+    Saves model
+    :param model: machine learning trained model
+    :param path_to_model_folder: str
+    :param name: str
+    :return: none
+    """
     with open(os.path.join(path_to_model_folder, f"{name}.pickle"), 'wb') as handle:
         pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def load_model(path_to_model_folder, name):
+    """
+    Loads trained model
+    :param path_to_model_folder: str
+    :param name: str
+    :return: none
+    """
     with open(os.path.join(path_to_model_folder, f"{name}.pickle"), 'rb') as handle:
         model = pickle.load(handle)
     return model
 
 
 def split_dct_img(X, y):
+    """
+    Converts a list of image (one image is a list of DCT) into a list of DCT with the corresponding labels
+    :param X: list of list of 8x8 DCT blocks
+    :param y: labels
+    :return: list of DCT blocks and their labels
+    """
     res_X = []
     res_y = []
     for curr_X, curr_y in zip(X, y):
@@ -59,6 +101,12 @@ def split_dct_img(X, y):
 
 
 def majority_vote(model, X_test):
+    """
+    Predicts an image class based on the majority vote of its DCT blocks
+    :param model: machine learning trained model
+    :param X_test: list images (on images is a list of DCT blocks)
+    :return: list of prediction per image based on the majority vote of its dct blocks
+    """
     y_pred = []
     for curr_X_test in X_test:
         curr_y_pred = model.predict(
@@ -69,11 +117,22 @@ def majority_vote(model, X_test):
 
 
 def get_average_dct(dct_images):
+    """
+    Computes the average DCT block for a list of compressed images
+    :param dct_images: list of images, an image is a list of DCT blocks
+    :return: list of DCT average
+    """
     list_average_dct = np.mean(np.array(dct_images), axis=1)
     return [avg_2D.flatten() for avg_2D in list_average_dct]
 
 
 def unique_images(X, y):
+    """
+    See report -> its method 1 to split data (not the train the model with the same images with different compressions
+    :param X: list of compressed images (average dct)
+    :param y: list of correponding labels
+    :return: list of X and list of y
+    """
     nb_class = len(np.unique(y))
     values, counts = np.unique(y, return_counts=True)
 
@@ -84,8 +143,6 @@ def unique_images(X, y):
     new_Y = []
 
     for i in range(nb_class):
-        # print(i * counts[i] + i * extract)
-        # print(i * counts[i] + i * extract + extract)
         new_X += X[i * counts[i] + i * extract: i * counts[i] + i * extract + extract]
         new_Y += y[i * counts[i] + i * extract: i * counts[i] + i * extract + extract]
 
@@ -93,6 +150,15 @@ def unique_images(X, y):
 
 
 def get_trained_model(model, PATH_MODELS, MODEL_NAME, X_train_block=None, y_train_block=None):
+    """
+    Get a trained model (if not available offline, will be trained and saved)
+    :param model: machine learning model
+    :param PATH_MODELS: path (str)
+    :param MODEL_NAME: str
+    :param X_train_block: list of DCT blocks
+    :param y_train_block: list of corresponding labels
+    :return: a trained model
+    """
     if not (os.path.exists(os.path.join(PATH_MODELS, MODEL_NAME + '.pickle'))):
         print(f"Training {MODEL_NAME}, please wait...")
         model.fit(X_train_block, y_train_block)
@@ -105,6 +171,12 @@ def get_trained_model(model, PATH_MODELS, MODEL_NAME, X_train_block=None, y_trai
 
 
 def pipeline_dct_blocks(MODEL_TYPE, DATASETS):
+    """
+    Loads model, trains it and evaluates it for DCT blocks and majority vote
+    :param MODEL_TYPE: must be "rf", "adaboost" or 'svm"
+    :param DATASETS: list of dataset folder names (["1", "2", "3"]
+    :return: None
+    """
     MODELS = {
         "rf": RandomForestClassifier(max_depth=2, random_state=0),
         "adaboost": AdaBoostClassifier(),
@@ -143,6 +215,12 @@ def pipeline_dct_blocks(MODEL_TYPE, DATASETS):
 
 
 def pipeline_avg_dct(MODEL_TYPE, DATASETS):
+    """
+    Load model, train it and evaluates it for average DCT
+    :param MODEL_TYPE: must be "rf", "adaboost" or 'svm"
+    :param DATASETS: list of dataset folder names (["1", "2", "3"]
+    :return: None
+    """
     MODELS = {
         "rf": RandomForestClassifier(max_depth=10, random_state=0),
         "adaboost": AdaBoostClassifier(),
@@ -172,6 +250,12 @@ def pipeline_avg_dct(MODEL_TYPE, DATASETS):
 
 
 def compare_pipeline_avg_dct(DATASETS, MODELS):
+    """
+    Load models, trains them and evaluates them for average DCT
+    :param DATASETS: list of dataset folder names (["1", "2", "3"]
+    :param MODELS: list of model type (["rf", "svm", "adaboost"]
+    :return: none
+    """
     X = []
     y_label = []
 

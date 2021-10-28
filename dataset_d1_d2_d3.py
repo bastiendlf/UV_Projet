@@ -5,7 +5,7 @@ import sys
 INPUT_DATA_FOLDER = '../data/'
 
 d_list = ["d1", "d2", "d3"]
-Qf = 10
+Qf = 90
 
 if __name__ == '__main__':
     if os.getcwd().endswith("/Code"):

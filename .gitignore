@@ -1,5 +1,7 @@
 # Project exclude paths
 /data/*.tif
 /output/datasets/*
+/output/CompressedImg/*
 /notebooks/.ipynb_checkpoints/
-/models/
+/demo/.ipynb_checkpoints/
+
