@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import utils.makeDataset as DatasetMaker
 import cv2
+import matplotlib.pyplot as plt
 
 
 def read_dct_blocks(datasets):
@@ -70,7 +71,7 @@ def localization_on_image(data_folder, image_number, dataset_number, test, score
     param dataset_number : list of numbers of datasets
     param test : dataframe of test set with prediction results
     param score : 100*(1-score)% blocs will be showed on the result image
-    return image with rectangles, dataframe containing all blocks of the given images, with positions in the image,
+    return : image with rectangles, dataframe containing all blocks of the given images, with positions in the image,
     list of positions of rectangles in the image"""
     img = cv2.imread(data_folder+'ucid'+str(0)*(5-len(str(image_number)))+str(image_number)+'.tif', 0) # image name
     height, width = img.shape
@@ -87,3 +88,24 @@ def localization_on_image(data_folder, image_number, dataset_number, test, score
         img = cv2.rectangle(img, block_best_pred.loc[i,'block_start_point'], block_best_pred.loc[i,'block_end_point'], color, thickness)
         vis_blocks.append(block_best_pred.loc[i,'block_start_point'])
     return img, block_pred, vis_blocks
+
+
+def visualize_bloc(data_folder, datasets, test_res, image_range, dataset_range, score_quantile):
+    """ Return images with (1-score_quantile)% best predicted blocs surrounded by rectangle
+    param data_folder : folder where are stored the images
+    param datasets : list of numbers of datasets
+    param test_res : dataframe of test set with prediction results
+    param image_range : range of image (in the shuffled test set, unique number) that you want to visualize
+    param dataset_range : dataset range for this image
+    param score_quantile : (1-score_quantile)% best predicted blocs
+    return : image with rectangles, dataframe containing all blocks of the given images, with positions in the image,
+    list of positions of rectangles in the image"""
+    img_numbers = test_res['image_number'].unique()
+    img_number = img_numbers[image_range]
+    dataset_nb = datasets[dataset_range]
+    s = test_res[test_res['class'] == dataset_nb].pred_proba.quantile([score_quantile]).values[0]
+
+    img_res, bl_pred, vis = localization_on_image(data_folder, img_number, dataset_nb, test_res, s)
+    img_res = cv2.cvtColor(img_res, cv2.COLOR_BGR2RGB)
+    plt.imshow(img_res)
+    return img_res, bl_pred, vis
